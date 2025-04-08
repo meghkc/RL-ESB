@@ -23,10 +23,17 @@ BUS_LINES = {
     },
     2: {
         "name": "Bus Line 2",
-        "terminal": "Terminal3",  
+        "terminal": "Terminal2",  
         "interval": 45,
         "trip_time": 40,
         "rest_time": 5
+    },
+    3: {
+        "name": "Bus Line 3",
+        "terminal": "Terminal3",  
+        "interval": 50,
+        "trip_time": 35,
+        "rest_time": 10
     }
 }
 
@@ -37,7 +44,8 @@ INITIAL_NUM_BUSES = 10  # total buses available at the depot
 COORDINATES = {
     DEPOT: (0, 0),
     "Terminal1": (10, 0),
-    "Terminal3": (0, 10)
+    "Terminal2": (0, 10),
+    "Terminal3": (5, 15)
 }
 
 # Dynamically calculate the maximum distance between any two points
@@ -56,7 +64,7 @@ MAX_DISTANCE = calculate_max_distance(COORDINATES)
 # ---------------------
 # New state vector: 2 base features (normalized current time, normalized bus line) +
 # a continuous availability value for each bus.
-STATE_DIM = 2 + INITIAL_NUM_BUSES  
+STATE_DIM = 2 + INITIAL_NUM_BUSES
 ACTION_DIM = INITIAL_NUM_BUSES  
 MAX_EPISODE_STEPS = None  # set dynamically based on timetable length
 
