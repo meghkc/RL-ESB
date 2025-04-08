@@ -62,6 +62,7 @@ if __name__ == '__main__':
     plt.title("Reward Progress over Training Episodes")
     plt.legend()
     plt.grid(True)
-    plt.show()
+    # plt.show()
+    plt.savefig("data/figures/training_rewards.png")
     
     evaluate(agent, env)

@@ -1,6 +1,7 @@
 # environment.py
 import numpy as np
 import math
+import os
 from config import (OPERATION_START_MIN, OPERATION_END_MIN, T_RANGE, BUS_LINES, DEPOT, INITIAL_NUM_BUSES,
                     STATE_DIM, COORDINATES, MAX_DISTANCE, W_DEADHEAD, W_UNUSED_PENALTY, 
                     W_REST_REWARD, W_UNAVAILABILITY, W_DEMAND_PENALTY, W_CHAIN, W_FINAL)
@@ -148,29 +149,40 @@ class BusSchedulingEnv:
         info = {"event": event, "deadhead_cost": deadhead_cost, "rn": rn, "penalty_unavail": penalty_unavail, "rk": rk, "chain_bonus": chain_bonus}
         return next_state, step_reward, done, info
 
-    def print_problem(self):
-        print("=== Problem Definition ===")
-        start_hr, start_min = divmod(OPERATION_START_MIN, 60)
-        end_hr, end_min = divmod(OPERATION_END_MIN, 60)
-        print(f"Operation Period: {start_hr:02d}:{start_min:02d} to {end_hr:02d}:{end_min:02d}")
-        print("\nBus Lines:")
-        for line_id, info in BUS_LINES.items():
-            print(f"  Bus Line {line_id}: {info['name']} - Loop at {info['terminal']}, "
-                  f"Interval: {info['interval']} min (Trip: {info['trip_time']} + Rest: {info['rest_time']})")
-        print("\nTimetable (Departure Events):")
-        for event in self.timetable:
-            hr, minute = divmod(event["time"], 60)
-            print(f"  {hr:02d}:{minute:02d} - Bus Line {event['line_id']} (Terminal: {event['terminal']})")
-        print("==========================\n")
+    def print_and_save(self, text, file):
+        """
+        Helper function to print text to the console and write it to a file.
+        """
+        print(text, end="")  # Print to console
+        file.write(text)     # Write to file
 
-    def print_solution(self):
-        print("=== Final Bus Schedules (Solution) ===")
-        for bus_id, events in self.schedule.items():
-            if events:
-                print(f"Bus {bus_id} schedule:")
-                for event in events:
-                    hr, minute = divmod(event["time"], 60)
-                    print(f"  {hr:02d}:{minute:02d} - Bus Line {event['line_id']} (Terminal: {event['terminal']})")
-            else:
-                print(f"Bus {bus_id} was not used.")
-        print("========================================\n")
+    def print_problem(self, file_path="data/results.txt"):
+        os.makedirs(os.path.dirname(file_path), exist_ok=True)
+        with open(file_path, "w") as f:
+            self.print_and_save("=== Problem Definition ===\n", f)
+            start_hr, start_min = divmod(OPERATION_START_MIN, 60)
+            end_hr, end_min = divmod(OPERATION_END_MIN, 60)
+            self.print_and_save(f"Operation Period: {start_hr:02d}:{start_min:02d} to {end_hr:02d}:{end_min:02d}\n\n", f)
+            self.print_and_save("Bus Lines:\n", f)
+            for line_id, info in BUS_LINES.items():
+                self.print_and_save(f"  Bus Line {line_id}: {info['name']} - Loop at {info['terminal']}, "
+                                    f"Interval: {info['interval']} min (Trip: {info['trip_time']} + Rest: {info['rest_time']})\n", f)
+            self.print_and_save("\nTimetable (Departure Events):\n", f)
+            for event in self.timetable:
+                hr, minute = divmod(event["time"], 60)
+                self.print_and_save(f"  {hr:02d}:{minute:02d} - Bus Line {event['line_id']} (Terminal: {event['terminal']})\n", f)
+            self.print_and_save("==========================\n\n", f)
+
+    def print_solution(self, file_path="data/results.txt"):
+        os.makedirs(os.path.dirname(file_path), exist_ok=True)
+        with open(file_path, "a") as f:  # Append to the same file
+            self.print_and_save("=== Final Bus Schedules (Solution) ===\n", f)
+            for bus_id, events in self.schedule.items():
+                if events:
+                    self.print_and_save(f"Bus {bus_id} schedule:\n", f)
+                    for event in events:
+                        hr, minute = divmod(event["time"], 60)
+                        self.print_and_save(f"  {hr:02d}:{minute:02d} - Bus Line {event['line_id']} (Terminal: {event['terminal']})\n", f)
+                else:
+                    self.print_and_save(f"Bus {bus_id} was not used.\n", f)
+            self.print_and_save("========================================\n", f)
