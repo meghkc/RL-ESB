@@ -101,7 +101,8 @@ class BusSchedulingEnv:
         # but we also include a penalty for unavailability as safety.
         penalty_unavail = 0.0
         if bus_info["next_available_time"] > event_time:
-            penalty_unavail = 20.0  # same as W_UNAVAILABILITY
+            # Use configured penalty for buses not ready in time
+            penalty_unavail = W_UNAVAILABILITY
 
         # Deadhead cost: if bus is not at required terminal.
         if current_location != required_terminal:
