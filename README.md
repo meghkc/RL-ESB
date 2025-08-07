@@ -9,7 +9,7 @@ A Deep Reinforcement Learning solution for optimizing electric bus fleet schedul
 ## 🎯 Features
 
 - **PPO-based DRL Agent**: Proximal Policy Optimization for stable learning
-- **Curriculum Learning**: Progressive training across fleet sizes (25→40→50+ buses)
+- **Curriculum Learning**: Progressive training across fleet sizes
 - **Energy Management**: Battery state-of-charge optimization and charging strategies
 - **Time-of-Use Pricing**: Dynamic electricity cost optimization
 - **Real-world Constraints**: Depot scheduling, trip timing, and energy consumption
@@ -25,8 +25,8 @@ pip install torch numpy pandas matplotlib
 ### Installation
 
 ```bash
-git clone https://github.com/yourusername/electric-bus-scheduling-drl.git
-cd electric-bus-scheduling-drl
+git clone https://github.com/meghkc/RL-ESB.git
+cd RL-ESB
 pip install -r requirements.txt
 ```
 
@@ -35,40 +35,38 @@ pip install -r requirements.txt
 #### 1. Training with Curriculum Learning
 
 ```bash
-python main.py --mode curriculum
+python run.py --mode curriculum
 ```
 
 #### 2. Training Standard PPO
 
 ```bash
-python main.py --mode train --episodes 50000
+python run.py --mode train --episodes 50000
 ```
 
 #### 3. Evaluation
 
 ```bash
-python main.py --mode evaluate --model_path models/model_final.pth
+python run.py --mode evaluate --model_path models/model_final.pth
 ```
 
 #### 4. Configuration Validation
 
 ```bash
-python main.py --mode validate
+python run.py --mode validate
 ```
 
 ## 📊 Project Structure
 
 ```
 electric-bus-scheduling-drl/
-├── config.py             # Configuration and hyperparameters
-├── environment.py        # RL environment implementation
-├── ppo_agent.py          # PPO agent implementation
-├── curriculum_learning.py # Curriculum learning implementation
-├── utils.py              # Utility functions
+├── config.py            
+├── run.py
+├── environment.py        
+├── ppo_agent.py          
 ├── data/                 # Data files
-│   └── L4node5_10_15.csv # Sample timetable (place your CSV here)
+│   └── 1111.csv          # Sample timetable (place your CSV here)
 ├── models/               # Trained models
-├── tests/                # Unit tests
 ├── requirements.txt      # Python dependencies
 └── README.md            # This file
 ```
