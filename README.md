@@ -126,7 +126,7 @@ This project is licensed under the MIT License.
 
 ## 📞 Contact
 
-Project Link: [https://github.com/yourusername/electric-bus-scheduling-drl](https://github.com/yourusername/electric-bus-scheduling-drl)
+Project Link: [https://github.com/meghkc/RL-ESB](https://github.com/meghkc/RL-ESB)
 
 ## 🙏 Acknowledgments
 
