@@ -60,7 +60,6 @@ python main.py --mode validate
 
 ```
 electric-bus-scheduling-drl/
-├── main.py               # Main entry point
 ├── config.py             # Configuration and hyperparameters
 ├── environment.py        # RL environment implementation
 ├── ppo_agent.py          # PPO agent implementation
