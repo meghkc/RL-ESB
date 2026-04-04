@@ -15,6 +15,15 @@ OPERATION_START_MIN = 6 * 60       # 6:00 AM = 360 minutes
 OPERATION_END_MIN   = 21 * 60      # 9:00 PM = 1260 minutes
 T_RANGE = OPERATION_END_MIN - OPERATION_START_MIN  # total operating period
 
+# Data source selection
+# - "synthetic": use BUS_LINES + COORDINATES defined below.
+# - "juliette": load one instance from dataArticleJuliette.
+DATA_SOURCE = "synthetic"
+DATASET_ROOT = "dataArticleJuliette"
+DATASET_SUBSET = "A"
+DATASET_SPLIT = "Training"
+DATASET_INSTANCE = "Network9a_22_0"
+
 # Bus line definitions:
 # Two bus lines with loop service:
 # Bus Line 1: Terminal1 (trip: 25 min + rest: 5 min; interval = 30 minutes)

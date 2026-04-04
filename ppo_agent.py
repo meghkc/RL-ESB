@@ -4,7 +4,7 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 from torch.distributions import Categorical
-from config import STATE_DIM, ACTION_DIM, HIDDEN_SIZE, LEARNING_RATE, GAMMA, CLIP_EPS, GAE_LAMBDA, PPO_EPOCHS
+from config import HIDDEN_SIZE, LEARNING_RATE, GAMMA, CLIP_EPS, GAE_LAMBDA, PPO_EPOCHS
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 print(f"Using device: {device}")
@@ -31,6 +31,7 @@ class ActorCritic(nn.Module):
             hidden_size (int): The number of neurons in the hidden layers.
         """
         super(ActorCritic, self).__init__()
+        self.action_dim = action_dim
         self.state_net = nn.Sequential(
             nn.Linear(state_dim, 128),
             nn.ReLU(),
@@ -59,12 +60,42 @@ class ActorCritic(nn.Module):
         value = self.critic(x)
         return logits, value
 
-    def act(self, state):
+    @staticmethod
+    def apply_action_mask(logits, action_mask):
+        if action_mask is None:
+            return logits
+        very_negative = -1e9
+        return logits.masked_fill(~action_mask.bool(), very_negative)
+
+    def build_action_mask(self, state, valid_actions=None):
+        mask = torch.zeros(self.action_dim, dtype=torch.bool, device=device)
+
+        if valid_actions is not None:
+            valid_indices = [idx for idx in valid_actions if 0 <= idx < self.action_dim]
+            if valid_indices:
+                mask[valid_indices] = True
+            else:
+                mask[:] = True
+            return mask
+
+        # Backward-compatible fallback: infer availability from state[2:].
+        availability = np.asarray(state[2 : 2 + self.action_dim], dtype=np.float32)
+        if availability.shape[0] == self.action_dim:
+            mask = torch.from_numpy(availability >= 0).to(device)
+            if not torch.any(mask):
+                mask[:] = True
+            return mask
+
+        mask[:] = True
+        return mask
+
+    def act(self, state, valid_actions=None):
         """
         Selects an action based on the current policy.
 
         Args:
             state (np.ndarray): The current state.
+            valid_actions (list, optional): Valid action ids for this state.
 
         Returns:
             tuple: A tuple containing:
@@ -74,12 +105,8 @@ class ActorCritic(nn.Module):
         """
         state_tensor = torch.FloatTensor(state).to(device)
         logits, value = self.forward(state_tensor)
-        # Action masking: use the continuous availability features from state[2:]
-        avail = torch.FloatTensor(state[2:]).to(device)  # shape: [ACTION_DIM]
-        # Create mask: available if avail >= 0; else 0.
-        mask = (avail >= 0).float().to(logits.device)
-        very_negative = -1e9
-        masked_logits = logits + (1 - mask) * very_negative
+        action_mask = self.build_action_mask(state, valid_actions=valid_actions)
+        masked_logits = self.apply_action_mask(logits, action_mask)
         dist = Categorical(logits=masked_logits)
         action = dist.sample()
         log_prob = dist.log_prob(action)
@@ -108,6 +135,7 @@ class PPOAgent:
         """
         self.policy = ActorCritic(state_dim, action_dim, hidden_size).to(device)
         self.optimizer = optim.Adam(self.policy.parameters(), lr=LEARNING_RATE)
+        self.action_dim = action_dim
 
     def compute_advantages(self, rewards, values, dones):
         """
@@ -135,14 +163,23 @@ class PPOAgent:
         Updates the actor-critic network using the PPO algorithm.
 
         Args:
-            trajectories (list): A list of trajectories, where each trajectory is a
-                tuple of (state, action, log_prob, reward, done).
+            trajectories (list): A list of trajectories. Each item is either:
+                (state, action, log_prob, reward, done) or
+                (state, action, log_prob, reward, done, valid_actions).
         """
         states = torch.FloatTensor(np.array([t[0] for t in trajectories])).to(device)
         actions = torch.LongTensor(np.array([t[1] for t in trajectories])).unsqueeze(1).to(device)
         old_log_probs = torch.stack([t[2] for t in trajectories]).detach().to(device)
         rewards = [t[3] for t in trajectories]
         dones = [1 if t[4] else 0 for t in trajectories]
+        valid_actions_batch = [t[5] if len(t) > 5 else None for t in trajectories]
+
+        action_masks = torch.stack(
+            [
+                self.policy.build_action_mask(t[0], valid_actions=valid_actions_batch[idx])
+                for idx, t in enumerate(trajectories)
+            ]
+        ).to(device)
 
         with torch.no_grad():
             _, state_values = self.policy(states)
@@ -156,7 +193,8 @@ class PPOAgent:
 
         for _ in range(PPO_EPOCHS):
             logits, values = self.policy(states)
-            dist = Categorical(logits=logits)
+            masked_logits = self.policy.apply_action_mask(logits, action_masks)
+            dist = Categorical(logits=masked_logits)
             new_log_probs = dist.log_prob(actions.squeeze())
 
             ratio = torch.exp(new_log_probs - old_log_probs)
